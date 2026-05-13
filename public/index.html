@@ -3,104 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tradeverse | Real Data Node</title>
+    <title>TRADEVERSE | Pro Analytics</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background: #020617; color: white; font-family: sans-serif; }
-        .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
-        .item-card { transition: transform 0.2s; }
-        .item-card:hover { transform: translateY(-5px); border-color: #0ea5e9; }
+        body { background: #0f172a; color: white; font-family: 'Inter', sans-serif; }
+        .roli-card { background: #1e293b; border: 1px solid #334155; transition: 0.2s; }
+        .roli-card:hover { border-color: #38bdf8; transform: translateY(-3px); }
+        .stat-box { background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255,255,255,0.05); }
     </style>
 </head>
-<body class="p-6">
-    <div class="max-w-4xl mx-auto">
-        <header class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
-            <div>
-                <h1 class="text-3xl font-black text-sky-400 italic tracking-tighter">TRADEVERSE</h1>
-                <p class="text-[10px] text-slate-500 font-mono uppercase tracking-widest">Connected to: Render-DOR2</p>
+<body class="p-4 md:p-10">
+    <div class="max-w-6xl mx-auto">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
+            <h1 class="text-3xl font-black text-sky-400 italic">TRADEVERSE</h1>
+            <div class="flex w-full md:w-auto bg-slate-800 p-1 rounded-xl border border-slate-700">
+                <input id="userInput" type="text" placeholder="Search Player..." class="bg-transparent px-4 py-2 outline-none w-full">
+                <button onclick="auditUser()" class="bg-sky-500 px-6 py-2 rounded-lg font-bold hover:bg-sky-400 transition">SEARCH</button>
             </div>
-            <div class="flex gap-2 w-full md:w-auto">
-                <input id="userInput" type="text" placeholder="Roblox Username" class="bg-slate-900 border border-slate-800 px-4 py-2 rounded-lg outline-none focus:ring-2 ring-sky-500 flex-1">
-                <button onclick="auditUser()" class="bg-sky-500 px-6 py-2 rounded-lg font-bold hover:bg-sky-400 transition">AUDIT</button>
-            </div>
-        </header>
+        </div>
 
-        <div id="status" class="text-slate-500 mb-6 text-sm font-mono uppercase tracking-widest border-l-2 border-sky-500 pl-4">System Online</div>
-        
-        <div id="profile" class="hidden glass p-8 rounded-[2rem] mb-8 animate-in fade-in duration-500">
-            <div class="flex items-center gap-6">
-                <div class="w-20 h-20 bg-slate-800 rounded-2xl flex items-center justify-center text-4xl shadow-inner">👤</div>
-                <div>
-                    <h2 id="name" class="text-4xl font-black tracking-tight text-white">---</h2>
-                    <p id="id" class="text-slate-500 font-mono text-sm uppercase italic">User ID: 0</p>
+        <div id="profile" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
+            <div class="roli-card p-6 rounded-3xl flex flex-col items-center">
+                <img id="avatar" src="" class="w-48 h-48 rounded-2xl bg-slate-900 mb-4 shadow-2xl">
+                <h2 id="name" class="text-2xl font-black">---</h2>
+                <p id="id" class="text-slate-500 font-mono text-xs">ID: 0</p>
+            </div>
+            
+            <div class="lg:col-span-2 roli-card p-8 rounded-3xl grid grid-cols-2 md:grid-cols-3 gap-6">
+                <div class="stat-box p-4 rounded-2xl">
+                    <p class="text-[10px] text-slate-500 font-bold uppercase">Total Value</p>
+                    <p id="total-val" class="text-2xl font-black text-sky-400">R$ 0</p>
+                </div>
+                <div class="stat-box p-4 rounded-2xl">
+                    <p class="text-[10px] text-slate-500 font-bold uppercase">Total RAP</p>
+                    <p id="total-rap" class="text-2xl font-black text-green-400">R$ 0</p>
+                </div>
+                <div class="stat-box p-4 rounded-2xl">
+                    <p class="text-[10px] text-slate-500 font-bold uppercase">Limiteds</p>
+                    <p id="item-count" class="text-2xl font-black">0</p>
+                </div>
+                <div class="stat-box p-4 rounded-2xl col-span-full">
+                    <p class="text-[10px] text-slate-500 font-bold uppercase mb-2">Join Date</p>
+                    <p id="join-date" class="text-sm font-medium text-slate-300">---</p>
                 </div>
             </div>
         </div>
 
-        <div id="inventory" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <h3 class="text-sm font-bold text-slate-500 uppercase tracking-[0.2em] mb-4">Inventory Collection</h3>
+        <div id="inventory" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             </div>
     </div>
 
     <script>
-        // Because your HTML and Server are on the same Render link, 
-        // we use window.location.origin to automatically find the URL!
         const API_BASE = window.location.origin;
 
         async function auditUser() {
             const name = document.getElementById('userInput').value;
-            const status = document.getElementById('status');
             const invDiv = document.getElementById('inventory');
-            
             if(!name) return;
 
-            status.innerText = "Connecting to Render Node...";
-            invDiv.innerHTML = "";
-
             try {
-                // 1. Fetch User Data
+                // Fetch User
                 const userRes = await fetch(`${API_BASE}/api/user/${name}`);
-                if(!userRes.ok) throw new Error("User not found or API error");
+                const user = await userRes.json();
                 
-                const userData = await userRes.json();
-
+                // Update Profile
                 document.getElementById('profile').classList.remove('hidden');
-                document.getElementById('name').innerText = userData.displayName;
-                document.getElementById('id').innerText = "User ID: " + userData.id;
+                document.getElementById('avatar').src = user.avatar;
+                document.getElementById('name').innerText = user.displayName;
+                document.getElementById('id').innerText = "ID: " + user.id;
+                document.getElementById('join-date').innerText = new Date(user.created).toLocaleDateString();
 
-                // 2. Fetch Real Inventory
-                status.innerText = "Scanning Roblox Inventory for Limiteds...";
-                const invRes = await fetch(`${API_BASE}/api/inventory/${userData.id}`);
+                // Fetch Inv
+                const invRes = await fetch(`${API_BASE}/api/inventory/${user.id}`);
                 const items = await invRes.json();
 
-                if(!items || items.length === 0) {
-                    invDiv.innerHTML = "<div class='col-span-full glass p-10 text-center text-slate-500 rounded-3xl'>No Limited/Collectible items found in this inventory.</div>";
-                } else {
-                    items.forEach(item => {
-                        const card = document.createElement('div');
-                        card.className = "item-card glass p-5 rounded-2xl border border-white/5";
-                        card.innerHTML = `
-                            <div class="flex flex-col gap-3">
-                                <div>
-                                    <p class="font-black text-sm text-white truncate">${item.name}</p>
-                                    <p class="text-[10px] text-slate-500 font-mono uppercase tracking-tighter mt-1">Asset ID: ${item.assetId || 'N/A'}</p>
-                                </div>
-                                <div class="flex justify-between items-end mt-2">
-                                    <div>
-                                        <p class="text-[9px] text-sky-400 font-bold uppercase italic">Recent Avg Price</p>
-                                        <p class="text-lg font-black text-green-400 font-mono">R$ ${item.recentAveragePrice ? item.recentAveragePrice.toLocaleString() : '???'}</p>
-                                    </div>
-                                    <div class="bg-sky-500/10 px-2 py-1 rounded text-[10px] font-black text-sky-400 uppercase tracking-widest">Limited</div>
-                                </div>
-                            </div>
-                        `;
-                        invDiv.appendChild(card);
-                    });
-                }
-                status.innerText = "Audit Complete. Found " + items.length + " assets.";
-            } catch (err) {
-                status.innerText = "Critical Error: " + err.message;
-                console.error(err);
-            }
+                let totalRap = 0;
+                invDiv.innerHTML = "";
+
+                items.forEach(item => {
+                    totalRap += item.recentAveragePrice;
+                    const card = document.createElement('div');
+                    card.className = "roli-card p-3 rounded-2xl flex flex-col items-center text-center";
+                    card.innerHTML = `
+                        <img src="https://www.roblox.com/asset-thumbnail/image?assetId=${item.assetId}&width=150&height=150&format=png" class="w-full rounded-lg mb-2">
+                        <p class="text-[10px] font-bold truncate w-full mb-1">${item.name}</p>
+                        <p class="text-xs font-black text-green-400 italic">R$ ${item.recentAveragePrice.toLocaleString()}</p>
+                    `;
+                    invDiv.appendChild(card);
+                });
+
+                document.getElementById('total-rap').innerText = "R$ " + totalRap.toLocaleString();
+                document.getElementById('total-val').innerText = "R$ " + Math.floor(totalRap * 1.1).toLocaleString(); // Estimated Value
+                document.getElementById('item-count').innerText = items.length;
+
+            } catch (err) { alert("User not found or Privacy settings hidden."); }
         }
     </script>
 </body>
