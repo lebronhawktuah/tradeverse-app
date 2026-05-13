@@ -2,111 +2,87 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>TRADEVERSE | Market Intelligence</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>TRADEVERSE | Collectible Analytics</title>
     <style>
-        body { background: #020617; color: #f8fafc; font-family: 'Inter', sans-serif; }
-        .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.05); }
-        .item-card { background: #1e293b; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .item-card:hover { transform: translateY(-5px); border-color: #0ea5e9; }
-        .demand-badge { font-size: 9px; font-weight: 900; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; }
+        :root { --bg: #05070a; --glass: rgba(15, 20, 28, 0.8); --sky: #0ea5e9; }
+        body { background: var(--bg); color: #fff; font-family: 'Inter', sans-serif; margin: 0; }
+        
+        /* Modern UI Components */
+        .glass { background: var(--glass); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
+        .nav { padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .input-group { background: #111827; border-radius: 12px; padding: 4px; display: flex; border: 1px solid #1f2937; }
+        .input-group input { background: transparent; border: none; color: white; padding: 10px 20px; outline: none; width: 300px; }
+        
+        /* Item Grid */
+        .item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; padding: 40px; }
+        .item-card { border-radius: 16px; padding: 12px; transition: 0.3s; position: relative; }
+        .item-card:hover { transform: translateY(-8px); border-color: var(--sky); box-shadow: 0 10px 30px rgba(14,165,233,0.2); }
+        .badge-projected { position: absolute; top: 8px; left: 8px; background: #ef4444; font-size: 8px; font-weight: 900; padding: 2px 6px; border-radius: 4px; }
+        
+        /* Stats Dashboard */
+        .stats-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; padding: 0 40px; }
+        .stat-box { padding: 24px; border-radius: 20px; text-align: center; }
+        .stat-val { font-size: 24px; font-weight: 900; color: var(--sky); font-family: monospace; }
     </style>
 </head>
-<body class="p-4 md:p-10">
-    <div class="max-w-6xl mx-auto">
-        <div class="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
-            <h1 class="text-3xl font-black italic tracking-tighter">TRADE<span class="text-sky-500">VERSE</span></h1>
-            <div class="flex w-full md:w-96 bg-slate-900 rounded-2xl p-1 border border-slate-800 shadow-2xl">
-                <input id="target" type="text" placeholder="Username..." class="bg-transparent px-4 py-2 w-full outline-none text-sm">
-                <button onclick="audit()" class="bg-sky-600 hover:bg-sky-500 px-6 py-2 rounded-xl font-bold transition-all">AUDIT</button>
-            </div>
+<body>
+
+    <nav class="nav glass">
+        <h1 style="font-weight: 900; letter-spacing: -1px;">TRADE<span style="color:var(--sky)">VERSE</span></h1>
+        <div class="input-group">
+            <input type="text" id="username" placeholder="Search Roblox User...">
+            <button onclick="syncAccount()" style="background:var(--sky); color:white; border:none; padding:10px 20px; border-radius:10px; cursor:pointer; font-weight:bold;">SYNC</button>
+        </div>
+    </nav>
+
+    <main id="app" style="display:none;">
+        <div style="text-align: center; padding: 40px;">
+            <img id="p-img" src="" style="width:120px; height:120px; border-radius:50%; border: 4px solid #1f2937;">
+            <h2 id="p-name" style="margin-top:10px;"></h2>
         </div>
 
-        <div id="loader" class="hidden text-center py-20 animate-pulse text-sky-500 font-bold">SCANNING DATABASE...</div>
-
-        <div id="dash" class="hidden">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
-                <div class="glass p-8 rounded-[2rem] flex flex-col items-center">
-                    <img id="uAv" src="" class="w-40 h-40 rounded-full bg-slate-900 border-4 border-slate-800 mb-4 shadow-2xl">
-                    <h2 id="uName" class="text-2xl font-black">---</h2>
-                    <p id="uJoin" class="text-slate-500 text-xs font-mono uppercase mt-1">---</p>
-                </div>
-                <div class="lg:col-span-2 glass p-8 rounded-[2rem] grid grid-cols-2 gap-4">
-                    <div class="bg-slate-900/50 p-6 rounded-2xl border border-white/5">
-                        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Total Value</p>
-                        <p id="vTotal" class="text-3xl font-black text-sky-400">R$ 0</p>
-                    </div>
-                    <div class="bg-slate-900/50 p-6 rounded-2xl border border-white/5">
-                        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Total RAP</p>
-                        <p id="rTotal" class="text-3xl font-black text-green-400">R$ 0</p>
-                    </div>
-                    <div class="bg-slate-900/50 p-6 rounded-2xl border border-white/5 col-span-2">
-                        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Limiteds Count</p>
-                        <p id="count" class="text-xl font-bold">0 Items</p>
-                    </div>
-                </div>
-            </div>
-
-            <div id="grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4"></div>
+        <div class="stats-bar">
+            <div class="stat-box glass"><p>Total Value</p><div id="t-val" class="stat-val">R$ 0</div></div>
+            <div class="stat-box glass"><p>Total RAP</p><div id="t-rap" class="stat-val">R$ 0</div></div>
+            <div id="p-risk" class="stat-box glass"><p>Projected Risk</p><div class="stat-val" style="color:#ef4444">0</div></div>
         </div>
-    </div>
+
+        <div id="inventory" class="item-grid"></div>
+    </main>
 
     <script>
-        const demandNames = ["None", "Terrible", "Low", "Normal", "High", "Amazing"];
-        const demandColors = ["bg-slate-700", "bg-red-900", "bg-orange-900", "bg-yellow-700", "bg-green-700", "bg-sky-700"];
+        async function syncAccount() {
+            const user = document.getElementById('username').value;
+            const res = await fetch(`/api/sync/${user}`);
+            const data = await res.json();
 
-        async function audit() {
-            const user = document.getElementById('target').value;
-            if(!user) return;
-            
-            document.getElementById('loader').classList.remove('hidden');
-            document.getElementById('dash').classList.add('hidden');
+            document.getElementById('app').style.display = 'block';
+            document.getElementById('p-name').innerText = data.profile.displayName;
+            document.getElementById('p-img').src = data.profile.avatar;
 
-            try {
-                const uRes = await fetch(`/api/user/${user}`);
-                const userData = await uRes.json();
+            let totalV = 0, totalR = 0, projCount = 0;
+            const invDiv = document.getElementById('inventory');
+            invDiv.innerHTML = '';
 
-                document.getElementById('uName').innerText = userData.displayName;
-                document.getElementById('uAv').src = userData.avatar;
-                document.getElementById('uJoin').innerText = "Joined " + new Date(userData.joined).getFullYear();
+            data.inventory.forEach(item => {
+                totalV += item.value;
+                totalR += item.recentAveragePrice;
+                if(item.isProjected) projCount++;
 
-                const iRes = await fetch(`/api/inventory/${userData.id}`);
-                const items = await iRes.json();
+                const card = document.createElement('div');
+                card.className = "item-card glass";
+                card.innerHTML = `
+                    ${item.isProjected ? '<div class="badge-projected">PROJECTED</div>' : ''}
+                    <img src="https://www.roblox.com/asset-thumbnail/image?assetId=${item.assetId}&width=150&height=150&format=png" style="width:100%; border-radius:10px;">
+                    <p style="font-size:10px; font-weight:bold; margin-top:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.name}</p>
+                    <p style="color:var(--sky); font-size:12px; font-weight:900;">R$ ${item.value.toLocaleString()}</p>
+                `;
+                invDiv.appendChild(card);
+            });
 
-                let tv = 0, tr = 0;
-                const grid = document.getElementById('grid');
-                grid.innerHTML = "";
-
-                items.forEach(item => {
-                    tv += item.value;
-                    tr += item.recentAveragePrice;
-                    
-                    const card = document.createElement('div');
-                    card.className = "item-card p-3 rounded-2xl border border-slate-800 relative overflow-hidden";
-                    card.innerHTML = `
-                        ${item.isProjected ? '<div class="absolute top-0 left-0 w-full bg-red-600 text-[8px] text-center font-black py-0.5">PROJECTED</div>' : ''}
-                        <img src="https://www.roblox.com/asset-thumbnail/image?assetId=${item.assetId}&width=150&height=150&format=png" class="w-full rounded-lg mb-2">
-                        <p class="text-[10px] font-bold truncate mb-1">${item.name}</p>
-                        <div class="flex justify-between items-center text-[11px] font-black">
-                            <span class="text-sky-400">R$ ${item.value.toLocaleString()}</span>
-                            <span class="demand-badge ${demandColors[item.demand]}">${demandNames[item.demand]}</span>
-                        </div>
-                        ${item.isHyped ? '<div class="mt-2 text-[9px] text-orange-400 font-bold italic">🔥 HYPED</div>' : ''}
-                    `;
-                    grid.appendChild(card);
-                });
-
-                document.getElementById('vTotal').innerText = "R$ " + tv.toLocaleString();
-                document.getElementById('rTotal').innerText = "R$ " + tr.toLocaleString();
-                document.getElementById('count').innerText = items.length + " Items Found";
-
-                document.getElementById('loader').classList.add('hidden');
-                document.getElementById('dash').classList.remove('hidden');
-
-            } catch (e) {
-                alert("User private or not found!");
-                document.getElementById('loader').classList.add('hidden');
-            }
+            document.getElementById('t-val').innerText = `R$ ${totalV.toLocaleString()}`;
+            document.getElementById('t-rap').innerText = `R$ ${totalR.toLocaleString()}`;
+            document.getElementById('p-risk').querySelector('.stat-val').innerText = projCount;
         }
     </script>
 </body>
