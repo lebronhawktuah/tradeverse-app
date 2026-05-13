@@ -51,39 +51,254 @@
     </main>
 
     <script>
-        async function syncAccount() {
-            const user = document.getElementById('username').value;
-            const res = await fetch(`/api/sync/${user}`);
-            const data = await res.json();
 
-            document.getElementById('app').style.display = 'block';
-            document.getElementById('p-name').innerText = data.profile.displayName;
-            document.getElementById('p-img').src = data.profile.avatar;
+    async function syncAccount() {
 
-            let totalV = 0, totalR = 0, projCount = 0;
-            const invDiv = document.getElementById('inventory');
+        const user =
+            document.getElementById('username').value;
+
+        if(!user) return;
+
+        try {
+
+            const res =
+                await fetch(`/api/sync/${user}`);
+
+            const data =
+                await res.json();
+
+            if(!data.success) {
+                alert(data.error || 'Sync failed');
+                return;
+            }
+
+            document.getElementById('app').style.display =
+                'block';
+
+            document.getElementById('p-name').innerText =
+                data.profile.displayName;
+
+            document.getElementById('p-img').src =
+                data.profile.avatar;
+
+            let totalV = 0;
+            let totalR = 0;
+            let projCount = 0;
+
+            const invDiv =
+                document.getElementById('inventory');
+
             invDiv.innerHTML = '';
 
             data.inventory.forEach(item => {
+
                 totalV += item.value;
                 totalR += item.recentAveragePrice;
-                if(item.isProjected) projCount++;
 
-                const card = document.createElement('div');
-                card.className = "item-card glass";
+                if(item.isProjected)
+                    projCount++;
+
+                const card =
+                    document.createElement('div');
+
+                card.className =
+                    "item-card glass";
+
+                const glow =
+                    item.rarity > 90
+                    ? '0 0 20px #facc15'
+                    : item.rarity > 75
+                    ? '0 0 15px #0ea5e9'
+                    : 'none';
+
+                card.style.boxShadow = glow;
+
                 card.innerHTML = `
-                    ${item.isProjected ? '<div class="badge-projected">PROJECTED</div>' : ''}
-                    <img src="https://www.roblox.com/asset-thumbnail/image?assetId=${item.assetId}&width=150&height=150&format=png" style="width:100%; border-radius:10px;">
-                    <p style="font-size:10px; font-weight:bold; margin-top:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.name}</p>
-                    <p style="color:var(--sky); font-size:12px; font-weight:900;">R$ ${item.value.toLocaleString()}</p>
+                    ${item.isProjected
+                        ? '<div class="badge-projected">PROJECTED</div>'
+                        : ''
+                    }
+
+                    <img
+                        src="${item.thumbnail}"
+                        style="
+                            width:100%;
+                            border-radius:10px;
+                        "
+                    >
+
+                    <p style="
+                        font-size:10px;
+                        font-weight:bold;
+                        margin-top:8px;
+                        white-space:nowrap;
+                        overflow:hidden;
+                        text-overflow:ellipsis;
+                    ">
+                        ${item.name}
+                    </p>
+
+                    <div style="
+                        display:flex;
+                        justify-content:space-between;
+                        align-items:center;
+                        margin-top:6px;
+                    ">
+
+                        <p style="
+                            color:var(--sky);
+                            font-size:12px;
+                            font-weight:900;
+                        ">
+                            R$ ${item.value.toLocaleString()}
+                        </p>
+
+                        <span style="
+                            font-size:9px;
+                            background:#111827;
+                            padding:4px 6px;
+                            border-radius:6px;
+                            color:#94a3b8;
+                        ">
+                            ${item.trend}
+                        </span>
+
+                    </div>
+
+                    <div style="
+                        margin-top:8px;
+                        display:flex;
+                        justify-content:space-between;
+                        font-size:9px;
+                        color:#64748b;
+                    ">
+
+                        <span>
+                            RAP ${item.recentAveragePrice.toLocaleString()}
+                        </span>
+
+                        <span>
+                            Rarity ${item.rarity}
+                        </span>
+
+                    </div>
+
+                    ${item.isHyped
+                        ? `
+                            <div style="
+                                margin-top:6px;
+                                font-size:9px;
+                                color:#f97316;
+                                font-weight:900;
+                            ">
+                                🔥 HYPED
+                            </div>
+                        `
+                        : ''
+                    }
                 `;
+
                 invDiv.appendChild(card);
             });
 
-            document.getElementById('t-val').innerText = `R$ ${totalV.toLocaleString()}`;
-            document.getElementById('t-rap').innerText = `R$ ${totalR.toLocaleString()}`;
-            document.getElementById('p-risk').querySelector('.stat-val').innerText = projCount;
+            document.getElementById('t-val').innerText =
+                `R$ ${totalV.toLocaleString()}`;
+
+            document.getElementById('t-rap').innerText =
+                `R$ ${totalR.toLocaleString()}`;
+
+            document.getElementById('p-risk')
+                .querySelector('.stat-val')
+                .innerText = projCount;
+
+        } catch(err) {
+
+            console.log(err);
+
+            alert('Failed to sync account.');
         }
-    </script>
+    }
+
+    // =========================================
+    // LIVE WEBSOCKET SYSTEM
+    // =========================================
+
+    const socket = new WebSocket(
+        "wss://tradeverse-backend-dor2.onrender.com"
+    );
+
+    socket.onopen = () => {
+
+        console.log(
+            "Connected to TRADEVERSE realtime."
+        );
+    };
+
+    socket.onmessage = (event) => {
+
+        const data =
+            JSON.parse(event.data);
+
+        console.log(
+            'LIVE EVENT:',
+            data
+        );
+
+        // Market updates
+        if(data.type === 'MARKET_UPDATE') {
+
+            document.title =
+                'TRADEVERSE • LIVE';
+
+            const pulse =
+                document.createElement('div');
+
+            pulse.innerText =
+                '📈 MARKET UPDATE';
+
+            pulse.style.position = 'fixed';
+            pulse.style.bottom = '20px';
+            pulse.style.right = '20px';
+            pulse.style.background = '#0ea5e9';
+            pulse.style.padding = '12px 18px';
+            pulse.style.borderRadius = '12px';
+            pulse.style.fontWeight = 'bold';
+            pulse.style.zIndex = '9999';
+            pulse.style.boxShadow =
+                '0 0 20px rgba(14,165,233,0.5)';
+
+            document.body.appendChild(pulse);
+
+            setTimeout(() => {
+                pulse.remove();
+            }, 3000);
+        }
+
+        // User synced
+        if(data.type === 'USER_SYNCED') {
+
+            console.log(
+                `${data.username} synced inventory`
+            );
+        }
+
+        // Roblox account connected
+        if(data.type === 'USER_CONNECTED') {
+
+            console.log(
+                `${data.username} verified Roblox account`
+            );
+        }
+    };
+
+    socket.onerror = (err) => {
+
+        console.log(
+            'WebSocket Error:',
+            err
+        );
+    };
+
+</script>
 </body>
 </html>
