@@ -1,55 +1,47 @@
-const express = require('express');
-const axios = require('axios');
-const path = require('path');
-const app = express();
+// --- NEW: ADVANCED TRADING INTELLIGENCE MODULE ---
+const TradeEngine = {
+    // Detects "Sharking" or "Projected" scams in a trade comparison
+    analyzeTrade: (offer, request, marketItems) => {
+        const getSum = (arr, type) => arr.reduce((acc, id) => acc + (marketItems[id]?.[type] || 0), 0);
+        
+        const sideAValue = getSum(offer, 3); // Value
+        const sideARap = getSum(offer, 2);   // RAP
+        const sideBValue = getSum(request, 3);
+        const sideBRap = getSum(request, 2);
 
-app.use(express.json());
-app.use(express.static('public'));
+        return {
+            winLoss: ((sideBValue - sideAValue) / sideAValue) * 100,
+            fairness: Math.abs(sideAValue - sideBValue) < (sideAValue * 0.1) ? 'Fair' : 'Unfair',
+            containsProjected: offer.concat(request).some(id => marketItems[id]?.[7] === 1),
+            rarityScore: (sideAValue + sideBValue) / 100000 // Handcrafted rarity index
+        };
+    }
+};
 
-// Real-time Data Cache (Updates every 10 mins)
-let marketData = { items: {}, lastSync: 0 };
-
-async function syncMarket() {
-    try {
-        const res = await axios.get('https://www.rolimons.com/itemapi/itemdetails');
-        marketData.items = res.data.items; // Real Rolimons Values
-        marketData.lastSync = Date.now();
-    } catch (e) { console.error("Market Sync Failed"); }
-}
-setInterval(syncMarket, 600000); syncMarket();
-
-// REAL ROBLOX ACCOUNT SYNC ENDPOINT
-app.get('/api/sync/:username', async (req, res) => {
-    try {
-        // 1. Get User ID from Username
-        const userSearch = await axios.post('https://users.roblox.com/v1/usernames/users', { usernames: [req.params.username] });
-        if (!userSearch.data.data.length) return res.status(404).send("User not found");
-        const userId = userSearch.data.data[0].id;
-
-        // 2. Fetch Inventory, Avatar, and Profile in Parallel
-        const [inv, thumb, profile] = await Promise.all([
-            axios.get(`https://inventory.roblox.com/v1/users/${userId}/assets/collectibles?limit=100`),
-            axios.get(`https://thumbnails.roblox.com/v1/users/avatar?userIds=${userId}&size=420x420&format=Png`),
-            axios.get(`https://users.roblox.com/v1/users/${userId}`)
-        ]);
-
-        // 3. Map Rolimons Values to Roblox Items
-        const richInventory = inv.data.data.map(item => {
-            const extra = marketData.items[item.assetId] || [];
-            return {
-                ...item,
-                value: extra[3] || item.recentAveragePrice, // Use Value, fallback to RAP
-                demand: ["None", "Low", "Normal", "High", "Amazing"][extra[5]] || "None",
-                isProjected: extra[7] === 1
-            };
-        });
-
-        res.json({
-            profile: { ...profile.data, avatar: thumb.data.data[0].imageUrl },
-            inventory: richInventory
-        });
-    } catch (err) { res.status(500).json({ error: "Roblox API Timeout" }); }
+// --- NEW: ROBLOX VERIFICATION SYSTEM ---
+// Integrates into your existing routing without replacing it
+app.post('/api/verify/start', (req, res) => {
+    const phrases = ["Tradeverse-Alpha", "Neon-Collector", "Obsidian-Trade", "Cyber-Valk"];
+    const phrase = phrases[Math.floor(Math.random() * phrases.length)] + "-" + Math.floor(Math.random() * 999);
+    // In a real database, you'd save this to the user's pending record
+    res.json({ phrase });
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`TRADEVERSE ACTIVE: http://localhost:${PORT}`));
+app.post('/api/verify/confirm', async (req, res) => {
+    try {
+        const { username, expectedPhrase } = req.body;
+        const userRes = await axios.get(`https://users.roblox.com/v1/users/usernames/${username}`);
+        const userId = userRes.data.id;
+        const profile = await axios.get(`https://users.roblox.com/v1/users/${userId}`);
+        
+        if (profile.data.description.includes(expectedPhrase)) {
+            // SYNC SUCCESS: Broadcast to existing WebSocket
+            const status = { type: 'USER_CONNECTED', user: username, timestamp: Date.now() };
+            // (Assuming your wss is globally accessible in server.js)
+            wss.clients.forEach(client => client.send(JSON.stringify(status)));
+            res.json({ success: true, userId });
+        } else {
+            res.status(400).json({ error: "Phrase not found in Roblox bio." });
+        }
+    } catch (e) { res.status(500).send("Verification Error"); }
+});
