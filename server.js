@@ -6,36 +6,44 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// This allows your website to talk to this server
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
-// This serves your HTML file automatically
-app.use(express.static('public'));
-
-// API 1: Find a Roblox User by Name
+// 1. Resolve Username to UserID
 app.get('/api/user/:username', async (req, res) => {
     try {
-        const response = await axios.post('https://users.roblox.com/v1/usernames/users', {
+        const userRes = await axios.post('https://users.roblox.com/v1/usernames/users', {
             usernames: [req.params.username],
-            excludeBannedUsers: true
+            excludeBannedUsers: false
         });
-        if (response.data.data.length === 0) return res.status(404).json({ error: "User not found" });
-        res.json(response.data.data[0]);
+        if (userRes.data.data.length === 0) return res.status(404).json({ error: "User not found" });
+        const user = userRes.data.data[0];
+
+        // Fetch Avatar and Extra Info
+        const infoRes = await axios.get(`https://users.roblox.com/v1/users/${user.id}`);
+        const thumbRes = await axios.get(`https://thumbnails.roblox.com/v1/users/avatar?userIds=${user.id}&size=420x420&format=Png&isCircular=false`);
+        
+        res.json({
+            ...user,
+            description: infoRes.data.description,
+            created: infoRes.data.created,
+            avatar: thumbRes.data.data[0].imageUrl
+        });
     } catch (err) {
         res.status(500).json({ error: "Roblox API Error" });
     }
 });
 
-// API 2: Get Real Collectibles (Limiteds)
+// 2. Get Real Collectibles & Market Data
 app.get('/api/inventory/:userId', async (req, res) => {
     try {
-        const url = `https://inventory.roblox.com/v1/users/${req.params.userId}/assets/collectibles?limit=100`;
-        const response = await axios.get(url);
+        const invUrl = `https://inventory.roblox.com/v1/users/${req.params.userId}/assets/collectibles?limit=100`;
+        const response = await axios.get(invUrl);
         res.json(response.data.data);
     } catch (err) {
-        res.status(500).json({ error: "Could not fetch inventory" });
+        res.status(500).json({ error: "Inventory Fetch Failed" });
     }
 });
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Rolimons-Clone Node active on ${PORT}`));
