@@ -2,102 +2,114 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TRADEVERSE | Pro Analytics</title>
+    <title>TRADEVERSE | Professional Analytics</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background: #0f172a; color: white; font-family: 'Inter', sans-serif; }
-        .roli-card { background: #1e293b; border: 1px solid #334155; transition: 0.2s; }
-        .roli-card:hover { border-color: #38bdf8; transform: translateY(-3px); }
-        .stat-box { background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255,255,255,0.05); }
+        body { background: #0b0f1a; color: #e2e8f0; font-family: 'Segoe UI', sans-serif; }
+        .stat-card { background: #161d2f; border: 1px solid #2d3748; }
+        .item-card { background: #1c2539; border-bottom: 4px solid #2d3748; transition: 0.2s; }
+        .item-card:hover { transform: scale(1.02); border-color: #38bdf8; }
+        .tag { font-size: 9px; padding: 2px 6px; border-radius: 4px; font-weight: 900; text-transform: uppercase; }
+        .demand-4 { color: #f43f5e; } /* Amazing */
+        .demand-3 { color: #fbbf24; } /* High */
     </style>
 </head>
-<body class="p-4 md:p-10">
+<body class="p-4">
     <div class="max-w-6xl mx-auto">
-        <div class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
-            <h1 class="text-3xl font-black text-sky-400 italic">TRADEVERSE</h1>
-            <div class="flex w-full md:w-auto bg-slate-800 p-1 rounded-xl border border-slate-700">
-                <input id="userInput" type="text" placeholder="Search Player..." class="bg-transparent px-4 py-2 outline-none w-full">
-                <button onclick="auditUser()" class="bg-sky-500 px-6 py-2 rounded-lg font-bold hover:bg-sky-400 transition">SEARCH</button>
+        <nav class="flex justify-between items-center py-6 border-b border-slate-800 mb-8">
+            <h1 class="text-2xl font-black text-white italic tracking-tighter">TRADE<span class="text-sky-500">VERSE</span></h1>
+            <div class="flex gap-2">
+                <input id="target" type="text" placeholder="User..." class="bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 outline-none focus:ring-1 ring-sky-500 text-sm">
+                <button onclick="search()" class="bg-sky-600 hover:bg-sky-500 px-5 py-2 rounded-lg font-bold text-sm transition">GO</button>
             </div>
-        </div>
+        </nav>
 
-        <div id="profile" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
-            <div class="roli-card p-6 rounded-3xl flex flex-col items-center">
-                <img id="avatar" src="" class="w-48 h-48 rounded-2xl bg-slate-900 mb-4 shadow-2xl">
-                <h2 id="name" class="text-2xl font-black">---</h2>
-                <p id="id" class="text-slate-500 font-mono text-xs">ID: 0</p>
-            </div>
-            
-            <div class="lg:col-span-2 roli-card p-8 rounded-3xl grid grid-cols-2 md:grid-cols-3 gap-6">
-                <div class="stat-box p-4 rounded-2xl">
-                    <p class="text-[10px] text-slate-500 font-bold uppercase">Total Value</p>
-                    <p id="total-val" class="text-2xl font-black text-sky-400">R$ 0</p>
-                </div>
-                <div class="stat-box p-4 rounded-2xl">
-                    <p class="text-[10px] text-slate-500 font-bold uppercase">Total RAP</p>
-                    <p id="total-rap" class="text-2xl font-black text-green-400">R$ 0</p>
-                </div>
-                <div class="stat-box p-4 rounded-2xl">
-                    <p class="text-[10px] text-slate-500 font-bold uppercase">Limiteds</p>
-                    <p id="item-count" class="text-2xl font-black">0</p>
-                </div>
-                <div class="stat-box p-4 rounded-2xl col-span-full">
-                    <p class="text-[10px] text-slate-500 font-bold uppercase mb-2">Join Date</p>
-                    <p id="join-date" class="text-sm font-medium text-slate-300">---</p>
-                </div>
-            </div>
-        </div>
+        <div id="loader" class="hidden text-center py-10 font-mono text-sky-500 animate-pulse">Establishing Secure API Connection...</div>
 
-        <h3 class="text-sm font-bold text-slate-500 uppercase tracking-[0.2em] mb-4">Inventory Collection</h3>
-        <div id="inventory" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <div id="dashboard" class="hidden animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <div class="stat-card p-6 rounded-2xl flex flex-col items-center">
+                    <img id="uAvatar" src="" class="w-24 h-24 rounded-full bg-slate-900 mb-3 border-4 border-slate-800">
+                    <h2 id="uName" class="text-xl font-black truncate w-full text-center">---</h2>
+                </div>
+                <div class="stat-card p-6 rounded-2xl flex flex-col justify-center">
+                    <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Total Value</p>
+                    <p id="tValue" class="text-3xl font-black text-sky-400 font-mono">0</p>
+                </div>
+                <div class="stat-card p-6 rounded-2xl flex flex-col justify-center">
+                    <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Total RAP</p>
+                    <p id="tRap" class="text-3xl font-black text-green-400 font-mono">0</p>
+                </div>
+                <div class="stat-card p-6 rounded-2xl flex flex-col justify-center">
+                    <p class="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Account Age</p>
+                    <p id="tAge" class="text-sm font-bold text-slate-300">---</p>
+                </div>
             </div>
+
+            <div id="invGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3"></div>
+        </div>
     </div>
 
     <script>
-        const API_BASE = window.location.origin;
+        const demandMap = ["Terrible", "Low", "Normal", "High", "Amazing"];
+        
+        async function search() {
+            const user = document.getElementById('target').value;
+            const dash = document.getElementById('dashboard');
+            const loader = document.getElementById('loader');
+            if(!user) return;
 
-        async function auditUser() {
-            const name = document.getElementById('userInput').value;
-            const invDiv = document.getElementById('inventory');
-            if(!name) return;
+            loader.classList.remove('hidden');
+            dash.classList.add('hidden');
 
             try {
-                // Fetch User
-                const userRes = await fetch(`${API_BASE}/api/user/${name}`);
-                const user = await userRes.json();
+                const uRes = await fetch(`/api/user/${user}`);
+                const userData = await uRes.json();
                 
-                // Update Profile
-                document.getElementById('profile').classList.remove('hidden');
-                document.getElementById('avatar').src = user.avatar;
-                document.getElementById('name').innerText = user.displayName;
-                document.getElementById('id').innerText = "ID: " + user.id;
-                document.getElementById('join-date').innerText = new Date(user.created).toLocaleDateString();
+                document.getElementById('uName').innerText = userData.displayName;
+                document.getElementById('uAvatar').src = userData.avatar;
+                document.getElementById('tAge').innerText = "Joined " + new Date(userData.created).getFullYear();
 
-                // Fetch Inv
-                const invRes = await fetch(`${API_BASE}/api/inventory/${user.id}`);
-                const items = await invRes.json();
+                const iRes = await fetch(`/api/inventory/${userData.id}`);
+                const items = await iRes.json();
 
-                let totalRap = 0;
-                invDiv.innerHTML = "";
+                let totalV = 0, totalR = 0;
+                const grid = document.getElementById('invGrid');
+                grid.innerHTML = "";
 
                 items.forEach(item => {
-                    totalRap += item.recentAveragePrice;
+                    totalV += item.roliValue;
+                    totalR += item.recentAveragePrice;
+
                     const card = document.createElement('div');
-                    card.className = "roli-card p-3 rounded-2xl flex flex-col items-center text-center";
+                    card.className = "item-card p-3 rounded-xl flex flex-col relative overflow-hidden";
                     card.innerHTML = `
-                        <img src="https://www.roblox.com/asset-thumbnail/image?assetId=${item.assetId}&width=150&height=150&format=png" class="w-full rounded-lg mb-2">
-                        <p class="text-[10px] font-bold truncate w-full mb-1">${item.name}</p>
-                        <p class="text-xs font-black text-green-400 italic">R$ ${item.recentAveragePrice.toLocaleString()}</p>
+                        ${item.isProjected ? '<div class="absolute top-0 left-0 w-full bg-red-600 text-[8px] text-center font-black py-0.5">PROJECTED</div>' : ''}
+                        <img src="https://www.roblox.com/asset-thumbnail/image?assetId=${item.assetId}&width=150&height=150&format=png" class="w-full mb-2 rounded-lg">
+                        <p class="text-[10px] font-bold truncate mb-2">${item.name}</p>
+                        <div class="mt-auto">
+                            <div class="flex justify-between items-center text-[10px] mb-1">
+                                <span class="text-slate-500 font-bold">VALUE</span>
+                                <span class="text-sky-400 font-black">R$ ${item.roliValue.toLocaleString()}</span>
+                            </div>
+                            <div class="flex justify-between items-center text-[9px]">
+                                <span class="text-slate-500 uppercase">Demand</span>
+                                <span class="font-bold demand-${item.demand}">${demandMap[item.demand] || 'None'}</span>
+                            </div>
+                            ${item.isHyped ? '<span class="tag bg-orange-500/20 text-orange-400 mt-2 block text-center">🔥 Hyped</span>' : ''}
+                        </div>
                     `;
-                    invDiv.appendChild(card);
+                    grid.appendChild(card);
                 });
 
-                document.getElementById('total-rap').innerText = "R$ " + totalRap.toLocaleString();
-                document.getElementById('total-val').innerText = "R$ " + Math.floor(totalRap * 1.1).toLocaleString(); // Estimated Value
-                document.getElementById('item-count').innerText = items.length;
-
-            } catch (err) { alert("User not found or Privacy settings hidden."); }
+                document.getElementById('tValue').innerText = totalV.toLocaleString();
+                document.getElementById('tRap').innerText = totalR.toLocaleString();
+                
+                loader.classList.add('hidden');
+                dash.classList.remove('hidden');
+            } catch (e) { 
+                loader.innerText = "Error: User private or not found.";
+            }
         }
     </script>
 </body>
