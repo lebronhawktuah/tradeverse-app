@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tradeverse | Real Data Node</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #020617; color: white; font-family: sans-serif; }
+        .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+    </style>
+</head>
+<body class="p-6">
+    <div class="max-w-4xl mx-auto">
+        <header class="flex justify-between items-center mb-10">
+            <h1 class="text-2xl font-black text-sky-400 italic">TRADEVERSE</h1>
+            <div class="flex gap-2">
+                <input id="userInput" type="text" placeholder="Roblox Username" class="bg-slate-900 border border-slate-800 px-4 py-2 rounded-lg outline-none focus:ring-2 ring-sky-500">
+                <button onclick="auditUser()" class="bg-sky-500 px-6 py-2 rounded-lg font-bold hover:bg-sky-400">AUDIT</button>
+            </div>
+        </header>
+
+        <div id="status" class="text-slate-500 mb-4 text-sm font-mono uppercase tracking-widest">System Ready</div>
+        
+        <div id="profile" class="hidden glass p-6 rounded-3xl mb-6">
+            <h2 id="name" class="text-3xl font-bold">---</h2>
+            <p id="id" class="text-slate-500">ID: 0</p>
+        </div>
+
+        <div id="inventory" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            </div>
+    </div>
+
+    <script>
+        // CHANGE THIS AFTER DEPLOYING TO RENDER
+        const API_BASE = ""; // Leave empty if hosting HTML and Node on the same Render service
+
+        async function auditUser() {
+            const name = document.getElementById('userInput').value;
+            const status = document.getElementById('status');
+            const invDiv = document.getElementById('inventory');
+            
+            status.innerText = "Connecting to Node...";
+            invDiv.innerHTML = "";
+
+            try {
+                // Get User ID
+                const userRes = await fetch(`${API_BASE}/api/user/${name}`);
+                const userData = await userRes.json();
+                if(userData.error) throw new Error(userData.error);
+
+                document.getElementById('profile').classList.remove('hidden');
+                document.getElementById('name').innerText = userData.displayName;
+                document.getElementById('id').innerText = "ID: " + userData.id;
+
+                // Get Real Inventory
+                status.innerText = "Fetching Real Collectibles...";
+                const invRes = await fetch(`${API_BASE}/api/inventory/${userData.id}`);
+                const items = await invRes.json();
+
+                if(items.length === 0) {
+                    invDiv.innerHTML = "<p class='text-slate-500'>No Limiteds found in this inventory.</p>";
+                } else {
+                    items.forEach(item => {
+                        const card = document.createElement('div');
+                        card.className = "glass p-4 rounded-2xl flex justify-between items-center";
+                        card.innerHTML = `
+                            <div>
+                                <p class="font-bold text-sm">${item.name}</p>
+                                <p class="text-xs text-slate-500">RAP: R$ ${item.recentAveragePrice.toLocaleString()}</p>
+                            </div>
+                            <div class="text-sky-400 font-bold text-xs">LIMITED</div>
+                        `;
+                        invDiv.appendChild(card);
+                    });
+                }
+                status.innerText = "Audit Complete.";
+            } catch (err) {
+                status.innerText = "Error: " + err.message;
+            }
+        }
+    </script>
+</body>
+</html>
